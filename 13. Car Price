@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score
 
-# Define the dataset
+# a) Define the dataset
 data = {
     'Origin': ['Japan', 'Japan', 'Japan', 'USA', 'Japan'],
     'Manufacturer': ['Honda', 'Toyota', 'Toyota', 'Chrysler', 'Honda'],
@@ -17,54 +17,69 @@ data = {
     'Example Type': ['Positive', 'Negative', 'Positive', 'Negative', 'Positive']
 }
 
-# Convert the data to a DataFrame
 df = pd.DataFrame(data)
 
-# a) Read the dataset (already in DataFrame)
 
-# b) Print the first five rows
+# b) Print first five rows
+
 print("First five rows of the dataset:")
 print(df.head())
 
-# c) Basic statistical computations
-print("\nBasic statistical computations:")
-print(df.describe())
+# c) Basic statistical summary
 
-# d) Columns and their data types
+print("\nBasic statistical summary:")
+print(df.describe(include='all'))
+
+
+# d) Columns and data types
+
 print("\nColumns and their data types:")
 print(df.dtypes)
 
-# e) Detect and replace null values with mode value
-if df.isnull().sum().any():
-    for column in df.columns:
-        if df[column].isnull().any():
-            mode_value = df[column].mode()[0]
-            df[column].fillna(mode_value, inplace=True)
 
-print("\nNull values after replacement (if any):")
+# e) Handle missing values
+
+for column in df.columns:
+    if df[column].isnull().any():
+        mode_value = df[column].mode()[0]
+        df[column] = df[column].fillna(mode_value)
+
+print("\nNull values after replacement:")
 print(df.isnull().sum())
 
-# f) Explore the dataset using heatmap
+# f) Encode categorical data first (for heatmap & ML)
+
+df_encoded_full = pd.get_dummies(df, drop_first=True)
+
+# Heatmap of correlations
 plt.figure(figsize=(10, 6))
-sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+sns.heatmap(df_encoded_full.corr(), annot=True, cmap='coolwarm')
 plt.title('Heatmap of Feature Correlations')
 plt.show()
 
-# Since this dataset is categorical and 'Example Type' is our target variable,
-# convert categorical features to numerical using one-hot encoding
-df_encoded = pd.get_dummies(df.drop(columns=['Example Type']))
-y = df['Example Type'].apply(lambda x: 1 if x == 'Positive' else 0)  # Encode target variable
 
-# g) Split the data into test and train
-X_train, X_test, y_train, y_test = train_test_split(df_encoded, y, test_size=0.2, random_state=42)
+# Prepare features and target
 
-# h) Fit into the model Naive Bayes Classifier
+X = pd.get_dummies(df.drop(columns=['Example Type']), drop_first=True)
+y = df['Example Type'].map({'Positive': 1, 'Negative': 0})
+
+# -------------------------------
+# g) Train-test split
+# -------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# h) Train Naive Bayes model
+
 model = GaussianNB()
 model.fit(X_train, y_train)
 
-# i) Predict the model
+# i) Make predictions
+
 y_pred = model.predict(X_test)
 
-# j) Find the accuracy of the model
+# j) Calculate accuracy
+
 accuracy = accuracy_score(y_test, y_pred)
 print("\nAccuracy of the model:", accuracy)
